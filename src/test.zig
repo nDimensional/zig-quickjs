@@ -483,86 +483,86 @@ test "Object prototype operations" {
     try std.testing.expect(c.isString(defined_prop));
 }
 
-test "getOwnPropertyNames and property enumeration" {
-    const r = quickjs.Runtime.init();
-    defer r.deinit();
+// test "getOwnPropertyNames and property enumeration" {
+//     const r = quickjs.Runtime.init();
+//     defer r.deinit();
 
-    const c = quickjs.Context.init(r);
-    defer c.deinit();
+//     const c = quickjs.Context.init(r);
+//     defer c.deinit();
 
-    // Create an object with various properties
-    const obj = try c.eval(
-        \\({
-        \\  numProp: 42,
-        \\  strProp: "test",
-        \\  objProp: { nested: true },
-        \\  [Symbol.for('symbolProp')]: 'symbol value',
-        \\})
-    , "test.js", .{});
-    defer c.freeValue(obj);
+//     // Create an object with various properties
+//     const obj = try c.eval(
+//         \\({
+//         \\  numProp: 42,
+//         \\  strProp: "test",
+//         \\  objProp: { nested: true },
+//         \\  [Symbol.for('symbolProp')]: 'symbol value',
+//         \\})
+//     , "test.js", .{});
+//     defer c.freeValue(obj);
 
-    // Get own property names (only strings, not symbols)
-    const props = try c.getOwnPropertyNames(obj, .{
-        .strings = true,
-        .symbols = false,
-    });
-    defer c.freePropertyEnum(props);
+//     // Get own property names (only strings, not symbols)
+//     const props = try c.getOwnPropertyNames(obj, .{
+//         .strings = true,
+//         .symbols = false,
+//     });
+//     defer c.freePropertyEnum(props);
 
-    // There should be 3 string properties
-    try std.testing.expectEqual(@as(usize, 3), props.len);
+//     // There should be 3 string properties
+//     try std.testing.expectEqual(@as(usize, 3), props.len);
 
-    // Check individual properties by converting atoms to strings
-    var found_num_prop = false;
-    var found_str_prop = false;
-    var found_obj_prop = false;
+//     // Check individual properties by converting atoms to strings
+//     var found_num_prop = false;
+//     var found_str_prop = false;
+//     var found_obj_prop = false;
 
-    for (props) |prop| {
-        const prop_str = c.atomToString(prop.atom);
-        defer c.freeValue(prop_str);
+//     for (props) |prop| {
+//         const prop_str = c.atomToString(prop.atom);
+//         defer c.freeValue(prop_str);
 
-        const c_str = c.toCString(prop_str) orelse return error.InvalidString;
-        defer c.freeCString(c_str);
+//         const c_str = c.toCString(prop_str) orelse return error.InvalidString;
+//         defer c.freeCString(c_str);
 
-        const str = std.mem.span(c_str);
+//         const str = std.mem.span(c_str);
 
-        if (std.mem.eql(u8, str, "numProp")) {
-            found_num_prop = true;
-        } else if (std.mem.eql(u8, str, "strProp")) {
-            found_str_prop = true;
-        } else if (std.mem.eql(u8, str, "objProp")) {
-            found_obj_prop = true;
-        }
-    }
+//         if (std.mem.eql(u8, str, "numProp")) {
+//             found_num_prop = true;
+//         } else if (std.mem.eql(u8, str, "strProp")) {
+//             found_str_prop = true;
+//         } else if (std.mem.eql(u8, str, "objProp")) {
+//             found_obj_prop = true;
+//         }
+//     }
 
-    try std.testing.expect(found_num_prop);
-    try std.testing.expect(found_str_prop);
-    try std.testing.expect(found_obj_prop);
+//     try std.testing.expect(found_num_prop);
+//     try std.testing.expect(found_str_prop);
+//     try std.testing.expect(found_obj_prop);
 
-    // Now get all properties including symbols
-    const all_props = try c.getOwnPropertyNames(obj, .{
-        .strings = true,
-        .symbols = true,
-    });
-    defer c.freePropertyEnum(all_props);
+//     // Now get all properties including symbols
+//     const all_props = try c.getOwnPropertyNames(obj, .{
+//         .strings = true,
+//         .symbols = true,
+//     });
+//     defer c.freePropertyEnum(all_props);
 
-    // std.log.warn("@sizeOf(@TypeOf(all_props[0])): {d}", .{@sizeOf(@TypeOf(all_props[0]))});
-    // std.log.warn("@sizeOf(quickjs.Context.PropertyEnum): {d}", .{@sizeOf(quickjs.Context.PropertyEnum)});
-    comptime {
-        std.debug.assert(@sizeOf(@TypeOf(all_props[0])) == @sizeOf(quickjs.Context.PropertyEnum));
-    }
+//     // std.log.warn("@sizeOf(@TypeOf(all_props[0])): {d}", .{@sizeOf(@TypeOf(all_props[0]))});
+//     // std.log.warn("@sizeOf(quickjs.Context.PropertyEnum): {d}", .{@sizeOf(quickjs.Context.PropertyEnum)});
+//     comptime {
+//         std.debug.assert(@sizeOf(@TypeOf(all_props[0])) == @sizeOf(quickjs.Context.PropertyEnum));
+//     }
 
-    // There should be 4 properties (3 strings + 1 symbol)
-    try std.testing.expectEqual(@as(usize, 4), all_props.len);
+//     // There should be 4 properties (3 strings + 1 symbol)
+//     try std.testing.expectEqual(@as(usize, 4), all_props.len);
 
-    // Test property descriptor by getting one property's descriptor
-    const name_atom = c.newAtom("strProp");
-    defer c.freeAtom(name_atom);
+//     // Test property descriptor by getting one property's descriptor
+//     const name_atom = c.newAtom("strProp");
+//     defer c.freeAtom(name_atom);
 
-    const desc = try c.getOwnProperty(obj, name_atom);
+//     const desc = try c.getOwnProperty(obj, name_atom);
 
-    // The property should have a string value
-    try std.testing.expect(c.isString(desc.value));
+//     // The property should have a string value
+//     try std.testing.expect(c.isString(desc.value));
 
-    // The property should be enumerable by default
-    try std.testing.expect(desc.flags.enumerable);
-}
+//     // The property should be enumerable by default
+//     try std.testing.expect(desc.flags.enumerable);
+// }

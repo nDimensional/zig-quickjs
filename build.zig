@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
             "libregexp.c",
             "cutils.c",
             "libunicode.c",
-            "libbf.c",
+            "xsum.c",
         },
     });
 
