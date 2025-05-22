@@ -149,44 +149,127 @@ pub const Runtime = packed struct {
         return Context{ .ptr = pctx };
     }
 
+    pub const MemoryUsage = packed struct {
+        malloc_size: i64,
+        malloc_limit: i64,
+        memory_used_size: i64,
+        malloc_count: i64,
+        memory_used_count: i64,
+        atom_count: i64,
+        atom_size: i64,
+        str_count: i64,
+        str_size: i64,
+        obj_count: i64,
+        obj_size: i64,
+        prop_count: i64,
+        prop_size: i64,
+        shape_count: i64,
+        shape_size: i64,
+        js_func_count: i64,
+        js_func_size: i64,
+        js_func_code_size: i64,
+        js_func_pc2line_count: i64,
+        js_func_pc2line_size: i64,
+        c_func_count: i64,
+        array_count: i64,
+        fast_array_count: i64,
+        fast_array_elements: i64,
+        binary_object_count: i64,
+        binary_object_size: i64,
+    };
+
     // Memory management utilities
-    pub inline fn computeMemoryUsage(self: Runtime) c.JSMemoryUsage {
+    pub inline fn computeMemoryUsage(self: Runtime) MemoryUsage {
         var usage: c.JSMemoryUsage = undefined;
         c.JS_ComputeMemoryUsage(self.ptr, &usage);
-        return usage;
+        return .{
+            .malloc_size = usage.malloc_size,
+            .malloc_limit = usage.malloc_limit,
+            .memory_used_size = usage.memory_used_size,
+            .malloc_count = usage.malloc_count,
+            .memory_used_count = usage.memory_used_count,
+            .atom_count = usage.atom_count,
+            .atom_size = usage.atom_size,
+            .str_count = usage.str_count,
+            .str_size = usage.str_size,
+            .obj_count = usage.obj_count,
+            .obj_size = usage.obj_size,
+            .prop_count = usage.prop_count,
+            .prop_size = usage.prop_size,
+            .shape_count = usage.shape_count,
+            .shape_size = usage.shape_size,
+            .js_func_count = usage.js_func_count,
+            .js_func_size = usage.js_func_size,
+            .js_func_code_size = usage.js_func_code_size,
+            .js_func_pc2line_count = usage.js_func_pc2line_count,
+            .js_func_pc2line_size = usage.js_func_pc2line_size,
+            .c_func_count = usage.c_func_count,
+            .array_count = usage.array_count,
+            .fast_array_count = usage.fast_array_count,
+            .fast_array_elements = usage.fast_array_elements,
+            .binary_object_count = usage.binary_object_count,
+            .binary_object_size = usage.binary_object_size,
+        };
     }
 
-    pub inline fn dumpMemoryUsage(self: Runtime, usage: c.JSMemoryUsage, file: std.fs.File) void {
-        c.JS_DumpMemoryUsage(file.handle, &usage, self.ptr);
+    pub inline fn dumpMemoryUsage(self: Runtime, usage: *const MemoryUsage, file: std.fs.File) void {
+        c.JS_DumpMemoryUsage(file.handle, &.{
+            .malloc_size = usage.malloc_size,
+            .malloc_limit = usage.malloc_limit,
+            .memory_used_size = usage.memory_used_size,
+            .malloc_count = usage.malloc_count,
+            .memory_used_count = usage.memory_used_count,
+            .atom_count = usage.atom_count,
+            .atom_size = usage.atom_size,
+            .str_count = usage.str_count,
+            .str_size = usage.str_size,
+            .obj_count = usage.obj_count,
+            .obj_size = usage.obj_size,
+            .prop_count = usage.prop_count,
+            .prop_size = usage.prop_size,
+            .shape_count = usage.shape_count,
+            .shape_size = usage.shape_size,
+            .js_func_count = usage.js_func_count,
+            .js_func_size = usage.js_func_size,
+            .js_func_code_size = usage.js_func_code_size,
+            .js_func_pc2line_count = usage.js_func_pc2line_count,
+            .js_func_pc2line_size = usage.js_func_pc2line_size,
+            .c_func_count = usage.c_func_count,
+            .array_count = usage.array_count,
+            .fast_array_count = usage.fast_array_count,
+            .fast_array_elements = usage.fast_array_elements,
+            .binary_object_count = usage.binary_object_count,
+            .binary_object_size = usage.binary_object_size,
+        }, self.ptr);
     }
 
     // Shared ArrayBuffer support
-    pub inline fn setSharedArrayBufferFunctions(self: Runtime, functions: *const c.JSSharedArrayBufferFunctions) void {
-        c.JS_SetSharedArrayBufferFunctions(self.ptr, functions);
-    }
+    // pub inline fn setSharedArrayBufferFunctions(self: Runtime, functions: *const c.JSSharedArrayBufferFunctions) void {
+    //     c.JS_SetSharedArrayBufferFunctions(self.ptr, functions);
+    // }
 
     // Host callbacks
-    pub inline fn setInterruptHandler(self: Runtime, cb: ?c.JSInterruptHandler, ptr: ?*anyopaque) void {
-        c.JS_SetInterruptHandler(self.ptr, cb, ptr);
-    }
+    // pub inline fn setInterruptHandler(self: Runtime, cb: ?c.JSInterruptHandler, ptr: ?*anyopaque) void {
+    //     c.JS_SetInterruptHandler(self.ptr, cb, ptr);
+    // }
 
     pub inline fn setCanBlock(self: Runtime, can_block: bool) void {
         c.JS_SetCanBlock(self.ptr, can_block);
     }
 
-    pub inline fn setHostPromiseRejectionTracker(self: Runtime, cb: ?c.JSHostPromiseRejectionTracker, ptr: ?*anyopaque) void {
-        c.JS_SetHostPromiseRejectionTracker(self.ptr, cb, ptr);
-    }
+    // pub inline fn setHostPromiseRejectionTracker(self: Runtime, cb: ?c.JSHostPromiseRejectionTracker, ptr: ?*anyopaque) void {
+    //     c.JS_SetHostPromiseRejectionTracker(self.ptr, cb, ptr);
+    // }
 
     // Module system
-    pub inline fn setModuleLoaderFunc(
-        self: Runtime,
-        module_normalize: ?c.JSModuleNormalizeFunc,
-        module_loader: ?c.JSModuleLoaderFunc,
-        ptr: ?*anyopaque,
-    ) void {
-        c.JS_SetModuleLoaderFunc(self.ptr, module_normalize, module_loader, ptr);
-    }
+    // pub inline fn setModuleLoaderFunc(
+    //     self: Runtime,
+    //     module_normalize: ?c.JSModuleNormalizeFunc,
+    //     module_loader: ?c.JSModuleLoaderFunc,
+    //     ptr: ?*anyopaque,
+    // ) void {
+    //     c.JS_SetModuleLoaderFunc(self.ptr, module_normalize, module_loader, ptr);
+    // }
 
     // Memory allocation utilities
     pub inline fn calloc(self: Runtime, count: usize, size: usize) ?*anyopaque {
@@ -214,10 +297,10 @@ pub const Runtime = packed struct {
     }
 
     // Runtime finalizer
-    pub inline fn addRuntimeFinalizer(self: Runtime, finalizer: c.JSRuntimeFinalizer, arg: ?*anyopaque) !void {
-        const ret = c.JS_AddRuntimeFinalizer(self.ptr, finalizer, arg);
-        if (ret < 0) return error.AddFinalizerFailed;
-    }
+    // pub inline fn addRuntimeFinalizer(self: Runtime, finalizer: c.JSRuntimeFinalizer, arg: ?*anyopaque) !void {
+    //     const ret = c.JS_AddRuntimeFinalizer(self.ptr, finalizer, arg);
+    //     if (ret < 0) return error.AddFinalizerFailed;
+    // }
 };
 
 pub const Context = packed struct {
@@ -674,9 +757,9 @@ pub const Context = packed struct {
         return ptr[0..size];
     }
 
-    pub inline fn newArrayBuffer(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value {
-        return c.JS_NewArrayBuffer(self.ptr, buf.ptr, buf.len, free_func, ptr, is_shared);
-    }
+    // pub inline fn newArrayBuffer(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value {
+    //     return c.JS_NewArrayBuffer(self.ptr, buf.ptr, buf.len, free_func, ptr, is_shared);
+    // }
 
     pub inline fn newArrayBufferCopy(self: Context, buf: []const u8) Value {
         return c.JS_NewArrayBufferCopy(self.ptr, buf.ptr, buf.len);
@@ -693,9 +776,9 @@ pub const Context = packed struct {
         return ptr[0..size];
     }
 
-    pub inline fn newUint8Array(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value {
-        return c.JS_NewUint8Array(self.ptr, buf.ptr, buf.len, free_func, ptr, is_shared);
-    }
+    // pub inline fn newUint8Array(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value {
+    //     return c.JS_NewUint8Array(self.ptr, buf.ptr, buf.len, free_func, ptr, is_shared);
+    // }
 
     pub inline fn newUint8ArrayCopy(self: Context, buf: []const u8) Value {
         return c.JS_NewUint8ArrayCopy(self.ptr, buf.ptr, buf.len);
@@ -790,36 +873,36 @@ pub const Context = packed struct {
         set_enum: bool = false,
     };
 
-    pub const PropertyEnum = packed struct {
-        is_enumerable: bool,
-        atom: Atom,
-    };
+    // pub const PropertyEnum = packed struct {
+    //     is_enumerable: bool,
+    //     atom: Atom,
+    // };
 
     // typedef struct JSPropertyEnum {
     //     bool is_enumerable;
     //     JSAtom atom;
     // } JSPropertyEnum;
 
-    pub inline fn getOwnPropertyNames(self: Context, obj: Value, flags: PropertyEnumFlags) ![]const c.JSPropertyEnum {
-        var c_flags: c_int = 0;
-        if (flags.strings) c_flags |= c.JS_GPN_STRING_MASK;
-        if (flags.symbols) c_flags |= c.JS_GPN_SYMBOL_MASK;
-        if (flags.private) c_flags |= c.JS_GPN_PRIVATE_MASK;
-        if (flags.enum_only) c_flags |= c.JS_GPN_ENUM_ONLY;
-        if (flags.set_enum) c_flags |= c.JS_GPN_SET_ENUM;
+    // pub inline fn getOwnPropertyNames(self: Context, obj: Value, flags: PropertyEnumFlags) ![]const c.JSPropertyEnum {
+    //     var c_flags: c_int = 0;
+    //     if (flags.strings) c_flags |= c.JS_GPN_STRING_MASK;
+    //     if (flags.symbols) c_flags |= c.JS_GPN_SYMBOL_MASK;
+    //     if (flags.private) c_flags |= c.JS_GPN_PRIVATE_MASK;
+    //     if (flags.enum_only) c_flags |= c.JS_GPN_ENUM_ONLY;
+    //     if (flags.set_enum) c_flags |= c.JS_GPN_SET_ENUM;
 
-        var ptab: [*c]c.JSPropertyEnum = undefined;
-        var len: u32 = 0;
+    //     var ptab: [*c]c.JSPropertyEnum = undefined;
+    //     var len: u32 = 0;
 
-        const ret = c.JS_GetOwnPropertyNames(self.ptr, &ptab, &len, obj, c_flags);
-        if (ret < 0) return error.Exception;
+    //     const ret = c.JS_GetOwnPropertyNames(self.ptr, &ptab, &len, obj, c_flags);
+    //     if (ret < 0) return error.Exception;
 
-        return ptab[0..len];
-    }
+    //     return ptab[0..len];
+    // }
 
-    pub inline fn freePropertyEnum(self: Context, tab: []const c.JSPropertyEnum) void {
-        c.JS_FreePropertyEnum(self.ptr, @constCast(tab.ptr), @intCast(tab.len));
-    }
+    // pub inline fn freePropertyEnum(self: Context, tab: []const c.JSPropertyEnum) void {
+    //     c.JS_FreePropertyEnum(self.ptr, @constCast(tab.ptr), @intCast(tab.len));
+    // }
 
     // Property descriptor structure
 

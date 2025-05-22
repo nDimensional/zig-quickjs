@@ -2,11 +2,111 @@
 
 ## API
 
-```zig
-// Atom
-pub const Atom = struct {};
+### Primitives
 
-// Context
+```zig
+pub const Atom: (type);
+pub const Value: (type);
+
+pub const NULL: Value;
+pub const UNDEFINED: Value;
+pub const FALSE: Value;
+pub const TRUE: Value;
+pub const EXCEPTION: Value;
+pub const UNINITIALIZED: Value;
+
+pub const TypedArrayType = enum(c_int) {
+    Uint8ClampedArray = c.JS_TYPED_ARRAY_UINT8C,
+    Int8Array = c.JS_TYPED_ARRAY_INT8,
+    Uint8Array = c.JS_TYPED_ARRAY_UINT8,
+    Int16Array = c.JS_TYPED_ARRAY_INT16,
+    Uint16Array = c.JS_TYPED_ARRAY_UINT16,
+    Int32Array = c.JS_TYPED_ARRAY_INT32,
+    Uint32Array = c.JS_TYPED_ARRAY_UINT32,
+    BigInt64Array = c.JS_TYPED_ARRAY_BIG_INT64,
+    BigUint64Array = c.JS_TYPED_ARRAY_BIG_UINT64,
+    Float16Array = c.JS_TYPED_ARRAY_FLOAT16,
+    Float32Array = c.JS_TYPED_ARRAY_FLOAT32,
+    Float64Array = c.JS_TYPED_ARRAY_FLOAT64,
+    _,
+};
+```
+
+### Runtime
+
+```zig
+pub const Runtime = struct {
+    pub inline fn init() Runtime
+    pub inline fn deinit(self: Runtime) void
+    pub inline fn setMemoryLimit(self: Runtime, limit: usize) void
+    pub inline fn setGCThreshold(self: Runtime, gc_threshold: usize) void
+    pub inline fn getGCThreshold(self: Runtime) usize
+    pub inline fn setMaxStackSize(self: Runtime, stack_size: usize) void
+    pub inline fn updateStackTop(self: Runtime) void
+    pub inline fn setRuntimeInfo(self: Runtime, info: []const u8) void
+    pub inline fn setDumpFlags(self: Runtime, flags: u64) void
+    pub inline fn getDumpFlags(self: Runtime) u64
+    pub inline fn setRuntimeOpaque(self: Runtime, ptr: ?*anyopaque) void
+    pub inline fn getRuntimeOpaque(self: Runtime) ?*anyopaque
+    pub inline fn runGC(self: Runtime) void
+    pub inline fn isLiveObject(self: Runtime, obj: Value) bool
+    // pub inline fn markValue(self: Runtime, val: Value, mark_func: c.JS_MarkFunc) void
+    pub inline fn freeValueRT(self: Runtime, val: Value) void
+    pub inline fn dupValueRT(self: Runtime, val: Value) Value
+    pub inline fn newClassID(self: Runtime) !ClassID
+    pub inline fn isRegisteredClass(self: Runtime, class_id: ClassID) bool
+    // pub inline fn newClass(self: Runtime, class_id: ClassID, class_def: *const c.JSClassDef) !void
+    pub inline fn isJobPending(self: Runtime) bool
+    pub inline fn executePendingJob(self: Runtime) !?Context
+
+    pub const MemoryUsage = packed struct {
+        malloc_size: i64,
+        malloc_limit: i64,
+        memory_used_size: i64,
+        malloc_count: i64,
+        memory_used_count: i64,
+        atom_count: i64,
+        atom_size: i64,
+        str_count: i64,
+        str_size: i64,
+        obj_count: i64,
+        obj_size: i64,
+        prop_count: i64,
+        prop_size: i64,
+        shape_count: i64,
+        shape_size: i64,
+        js_func_count: i64,
+        js_func_size: i64,
+        js_func_code_size: i64,
+        js_func_pc2line_count: i64,
+        js_func_pc2line_size: i64,
+        c_func_count: i64,
+        array_count: i64,
+        fast_array_count: i64,
+        fast_array_elements: i64,
+        binary_object_count: i64,
+        binary_object_size: i64,
+    };
+    pub inline fn computeMemoryUsage(self: Runtime) MemoryUsage
+    pub inline fn dumpMemoryUsage(self: Runtime, usage: *const MemoryUsage, file: std.fs.File) void
+    // pub inline fn setSharedArrayBufferFunctions(self: Runtime, functions: *const c.JSSharedArrayBufferFunctions) void
+    // pub inline fn setInterruptHandler(self: Runtime, cb: ?c.JSInterruptHandler, ptr: ?*anyopaque) void
+    pub inline fn setCanBlock(self: Runtime, can_block: bool) void
+    // pub inline fn setHostPromiseRejectionTracker(self: Runtime, cb: ?c.JSHostPromiseRejectionTracker, ptr: ?*anyopaque) void
+    // pub inline fn setModuleLoaderFunc(self: Runtime, module_normalize: ?c.JSModuleNormalizeFunc, module_loader: ?c.JSModuleLoaderFunc, ptr: ?*anyopaque) void
+    pub inline fn calloc(self: Runtime, count: usize, size: usize) ?*anyopaque
+    pub inline fn malloc(self: Runtime, size: usize) ?*anyopaque
+    pub inline fn free(self: Runtime, ptr: ?*anyopaque) void
+    pub inline fn realloc(self: Runtime, ptr: ?*anyopaque, size: usize) ?*anyopaque
+    pub inline fn mallocz(self: Runtime, size: usize) ?*anyopaque
+    pub inline fn mallocUsableSize(self: Runtime, ptr: ?*const anyopaque) usize
+    // pub inline fn addRuntimeFinalizer(self: Runtime, finalizer: c.JSRuntimeFinalizer, arg: ?*anyopaque) !void
+};
+```
+
+### Context
+
+```zig
 pub const Context = struct {
     pub inline fn init(runtime: Runtime) Context
     pub inline fn deinit(self: Context) void
@@ -101,11 +201,11 @@ pub const Context = struct {
     pub inline fn call(self: Context, func_obj: Value, this_obj: Value, args: []const Value) Value
     pub inline fn callConstructor(self: Context, func_obj: Value, args: []const Value) Value
     pub inline fn getArrayBuffer(self: Context, val: Value) ![]u8
-    pub inline fn newArrayBuffer(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value
+    // pub inline fn newArrayBuffer(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value
     pub inline fn newArrayBufferCopy(self: Context, buf: []const u8) Value
     pub inline fn detachArrayBuffer(self: Context, obj: Value) void
     pub inline fn getUint8Array(self: Context, obj: Value) ![]u8
-    pub inline fn newUint8Array(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value
+    // pub inline fn newUint8Array(self: Context, buf: []u8, free_func: ?c.JSFreeArrayBufferDataFunc, ptr: ?*anyopaque, is_shared: bool) Value
     pub inline fn newUint8ArrayCopy(self: Context, buf: []const u8) Value
     pub inline fn getTypedArrayType(self: Context, obj: Value) ?TypedArrayType
     pub inline fn getTypedArrayBuffer(self: Context, obj: Value) !struct { buffer: Value, byte_offset: usize, byte_length: usize, bytes_per_element: usize }
@@ -121,8 +221,8 @@ pub const Context = struct {
     pub inline fn atomToString(self: Context, atom: Atom) Value
     pub inline fn atomToCString(self: Context, atom: Atom) ?[*:0]const u8
     pub inline fn valueToAtom(self: Context, val: Value) Atom
-    pub inline fn getOwnPropertyNames(self: Context, obj: Value, flags: PropertyEnumFlags) ![]c.JSPropertyEnum
-    pub inline fn freePropertyEnum(self: Context, tab: []c.JSPropertyEnum) void
+    // pub inline fn getOwnPropertyNames(self: Context, obj: Value, flags: PropertyEnumFlags) ![]c.JSPropertyEnum
+    // pub inline fn freePropertyEnum(self: Context, tab: []c.JSPropertyEnum) void
     pub inline fn getOwnProperty(self: Context, obj: Value, prop: Atom) !PropertyDescriptor
     pub inline fn isExtensible(self: Context, obj: Value) !bool
     pub inline fn preventExtensions(self: Context, obj: Value) !bool
@@ -150,12 +250,12 @@ pub const Context = struct {
     pub inline fn addIntrinsicBigInt(self: Context) void
     pub inline fn addIntrinsicWeakRef(self: Context) void
     pub inline fn addPerformance(self: Context) void
-    pub inline fn newCFunction(self: Context, func: c.JSCFunction, name: []const u8, length: c_int) Value
-    pub inline fn newCFunction2(self: Context, func: c.JSCFunction, name: []const u8, length: c_int, cproto: c.JSCFunctionEnum, magic: c_int) Value
-    pub inline fn newCFunctionMagic(self: Context, func: c.JSCFunctionMagic, name: []const u8, length: c_int, cproto: c.JSCFunctionEnum, magic: c_int) Value
+    // pub inline fn newCFunction(self: Context, func: c.JSCFunction, name: []const u8, length: c_int) Value
+    // pub inline fn newCFunction2(self: Context, func: c.JSCFunction, name: []const u8, length: c_int, cproto: c.JSCFunctionEnum, magic: c_int) Value
+    // pub inline fn newCFunctionMagic(self: Context, func: c.JSCFunctionMagic, name: []const u8, length: c_int, cproto: c.JSCFunctionEnum, magic: c_int) Value
     pub inline fn setConstructor(self: Context, func_obj: Value, proto: Value) void
     pub inline fn setConstructorBit(self: Context, func_obj: Value, val: bool) bool
-    pub inline fn newCFunctionData(self: Context, func: c.JSCFunctionData, length: c_int, magic: c_int, data: []const Value) Value
+    // pub inline fn newCFunctionData(self: Context, func: c.JSCFunctionData, length: c_int, magic: c_int, data: []const Value) Value
     pub inline fn getModuleNamespace(self: Context, m: Module) Value
     pub inline fn getModuleName(self: Context, m: Module) Atom
     pub inline fn getImportMeta(self: Context, m: Module) Value
@@ -163,10 +263,10 @@ pub const Context = struct {
     pub inline fn evalFunction(self: Context, fun_obj: Value) Value
     pub inline fn getScriptOrModuleName(self: Context, n_stack_levels: i32) Atom
     pub inline fn loadModule(self: Context, basename: ?[]const u8, filename: []const u8) Value
-    pub inline fn newCModule(self: Context, name: []const u8, func: c.JSModuleInitFunc) ?Module
+    // pub inline fn newCModule(self: Context, name: []const u8, func: c.JSModuleInitFunc) ?Module
     pub inline fn addModuleExport(self: Context, m: Module, name: []const u8) !void
     pub inline fn setModuleExport(self: Context, m: Module, name: []const u8, val: Value) !void
-    pub inline fn enqueueJob(self: Context, job_func: c.JSJobFunc, args: []const Value) !void
+    // pub inline fn enqueueJob(self: Context, job_func: c.JSJobFunc, args: []const Value) !void
     pub inline fn writeObject(self: Context, obj: Value, flags: WriteObjectFlags) ![]u8
     pub inline fn readObject(self: Context, buf: []const u8, flags: ReadObjectFlags) Value
     pub inline fn malloc(self: Context, size: usize) ?*anyopaque
@@ -178,42 +278,4 @@ pub const Context = struct {
     pub inline fn strndup(self: Context, str: []const u8, n: usize) ?[*:0]u8
     pub inline fn mallocUsableSize(self: Context, ptr: ?*const anyopaque) usize
 };
-
-// Runtime
-pub inline fn init() Runtime
-pub inline fn deinit(self: Runtime) void
-pub inline fn setMemoryLimit(self: Runtime, limit: usize) void
-pub inline fn setGCThreshold(self: Runtime, gc_threshold: usize) void
-pub inline fn getGCThreshold(self: Runtime) usize
-pub inline fn setMaxStackSize(self: Runtime, stack_size: usize) void
-pub inline fn updateStackTop(self: Runtime) void
-pub inline fn setRuntimeInfo(self: Runtime, info: []const u8) void
-pub inline fn setDumpFlags(self: Runtime, flags: u64) void
-pub inline fn getDumpFlags(self: Runtime) u64
-pub inline fn setRuntimeOpaque(self: Runtime, ptr: ?*anyopaque) void
-pub inline fn getRuntimeOpaque(self: Runtime) ?*anyopaque
-pub inline fn runGC(self: Runtime) void
-pub inline fn isLiveObject(self: Runtime, obj: Value) bool
-pub inline fn markValue(self: Runtime, val: Value, mark_func: c.JS_MarkFunc) void
-pub inline fn freeValueRT(self: Runtime, val: Value) void
-pub inline fn dupValueRT(self: Runtime, val: Value) Value
-pub inline fn newClassID(self: Runtime) !ClassID
-pub inline fn isRegisteredClass(self: Runtime, class_id: ClassID) bool
-pub inline fn newClass(self: Runtime, class_id: ClassID, class_def: *const c.JSClassDef) !void
-pub inline fn isJobPending(self: Runtime) bool
-pub inline fn executePendingJob(self: Runtime) !?Context
-pub inline fn computeMemoryUsage(self: Runtime) c.JSMemoryUsage
-pub inline fn dumpMemoryUsage(self: Runtime, usage: c.JSMemoryUsage, file: std.fs.File) void
-pub inline fn setSharedArrayBufferFunctions(self: Runtime, functions: *const c.JSSharedArrayBufferFunctions) void
-pub inline fn setInterruptHandler(self: Runtime, cb: ?c.JSInterruptHandler, ptr: ?*anyopaque) void
-pub inline fn setCanBlock(self: Runtime, can_block: bool) void
-pub inline fn setHostPromiseRejectionTracker(self: Runtime, cb: ?c.JSHostPromiseRejectionTracker, ptr: ?*anyopaque) void
-pub inline fn setModuleLoaderFunc(self: Runtime, module_normalize: ?c.JSModuleNormalizeFunc, module_loader: ?c.JSModuleLoaderFunc, ptr: ?*anyopaque) void
-pub inline fn calloc(self: Runtime, count: usize, size: usize) ?*anyopaque
-pub inline fn malloc(self: Runtime, size: usize) ?*anyopaque
-pub inline fn free(self: Runtime, ptr: ?*anyopaque) void
-pub inline fn realloc(self: Runtime, ptr: ?*anyopaque, size: usize) ?*anyopaque
-pub inline fn mallocz(self: Runtime, size: usize) ?*anyopaque
-pub inline fn mallocUsableSize(self: Runtime, ptr: ?*const anyopaque) usize
-pub inline fn addRuntimeFinalizer(self: Runtime, finalizer: c.JSRuntimeFinalizer, arg: ?*anyopaque) !void
 ```
