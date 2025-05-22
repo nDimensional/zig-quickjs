@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
-    // const optimize = b.standardOptimizeOption(.{});
+    const optimize = b.standardOptimizeOption(.{});
     // const target = b.standardTargetOptions(.{});
 
     const quickjs_dep = b.dependency("quickjs", .{});
@@ -25,18 +25,21 @@ pub fn build(b: *std.Build) void {
 
     b.step("test", "Run QuickJS tests").dependOn(&test_runner.step);
 
-    // // WASM
-    // const wasm = b.addExecutable(.{
-    //     .name = "quickjs",
-    //     .root_source_file = b.path("./wasm/lib.zig"),
-    //     .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding }),
-    //     .optimize = optimize,
-    //     .version = .{ .major = 0, .minor = 0, .patch = 1 },
-    // });
+    // WASM
+    const wasm = b.addExecutable(.{
+        .name = "quickjs",
+        .root_source_file = b.path("./wasm/lib.zig"),
+        .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .wasi }),
+        .optimize = optimize,
+        .version = .{ .major = 0, .minor = 0, .patch = 1 },
+        // .link_libc = true,
+    });
 
-    // wasm.root_module.addImport("quickjs", quickjs);
+    wasm.linkLibC();
 
-    // wasm.entry = .disabled;
-    // wasm.rdynamic = true;
-    // b.installArtifact(wasm);
+    wasm.root_module.addImport("quickjs", quickjs);
+
+    wasm.entry = .disabled;
+    wasm.rdynamic = true;
+    b.installArtifact(wasm);
 }
