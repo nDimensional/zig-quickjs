@@ -3,7 +3,11 @@ const std = @import("std");
 const quickjs = @import("quickjs");
 
 test "Initialize a context" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -13,7 +17,11 @@ test "Initialize a context" {
 }
 
 test "Create objects and manipulate properties" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -44,7 +52,11 @@ test "Create objects and manipulate properties" {
 }
 
 test "Array creation and manipulation" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -73,7 +85,11 @@ test "Array creation and manipulation" {
 }
 
 test "Object property existence and deletion" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -103,7 +119,11 @@ test "Object property existence and deletion" {
 }
 
 test "Value type checking" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -131,7 +151,11 @@ test "Value type checking" {
 }
 
 test "JavaScript evaluation" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -166,7 +190,11 @@ test "JavaScript evaluation" {
 }
 
 test "JavaScript function creation and calling" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -216,7 +244,11 @@ test "JavaScript function creation and calling" {
 }
 
 test "Value conversion roundtrip tests" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -266,7 +298,11 @@ test "Value conversion roundtrip tests" {
 }
 
 test "Atom API" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -308,7 +344,11 @@ test "Atom API" {
 }
 
 test "Error handling" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -353,7 +393,11 @@ test "Error handling" {
 }
 
 test "ArrayBuffer and TypedArray support" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -395,7 +439,11 @@ test "ArrayBuffer and TypedArray support" {
 }
 
 test "JSON functions" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);
@@ -432,7 +480,11 @@ test "JSON functions" {
 }
 
 test "Object prototype operations" {
-    const r = quickjs.Runtime.init();
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
+    const r = quickjs.Runtime.init(&allocator);
     defer r.deinit();
 
     const c = quickjs.Context.init(r);

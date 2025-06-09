@@ -39,8 +39,60 @@ pub const TypedArrayType = enum(c_int) {
 pub const Runtime = packed struct {
     ptr: ?*c.JSRuntime,
 
-    pub inline fn init() Runtime {
-        return .{ .ptr = c.JS_NewRuntime() };
+    fn js_calloc(allocator_ptr: ?*anyopaque, count: usize, size: usize) callconv(.c) ?*anyopaque {
+        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+        const len = count * size;
+        const result = allocator.alloc(u8, @sizeOf(usize) + len) catch |err|
+            @panic(@errorName(err));
+        @memset(result, 0);
+        std.mem.writeInt(usize, result[0..@sizeOf(usize)], len, .little);
+        return result[@sizeOf(usize)..].ptr;
+    }
+
+    fn js_malloc(allocator_ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
+        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+        const result = allocator.alloc(u8, @sizeOf(usize) + size) catch |err|
+            @panic(@errorName(err));
+        @memset(result, 0);
+        std.mem.writeInt(usize, result[0..@sizeOf(usize)], size, .little);
+        return result[@sizeOf(usize)..].ptr;
+    }
+
+    fn js_free(allocator_ptr: ?*anyopaque, ptr: ?*anyopaque) callconv(.c) void {
+        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+        const result: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
+        const len = std.mem.readInt(usize, result[0..@sizeOf(usize)], .little);
+        allocator.free(result[0 .. @sizeOf(usize) + len]);
+    }
+
+    fn js_realloc(allocator_ptr: ?*anyopaque, ptr: ?*anyopaque, new_len: usize) callconv(.c) ?*anyopaque {
+        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+        const old_ptr: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
+        const old_len = std.mem.readInt(usize, old_ptr[0..@sizeOf(usize)], .little);
+        const result = allocator.realloc(old_ptr[0 .. @sizeOf(usize) + old_len], @sizeOf(usize) + new_len) catch |err|
+            @panic(@errorName(err));
+        std.mem.writeInt(usize, result[0..@sizeOf(usize)], new_len, .little);
+        return result[@sizeOf(usize)..].ptr;
+    }
+
+    fn js_malloc_usable_size(_: ?*const anyopaque) callconv(.c) usize {
+        return 0;
+    }
+
+    const malloc_functions = c.JSMallocFunctions{
+        .js_calloc = &js_calloc,
+        .js_malloc = &js_malloc,
+        .js_free = &js_free,
+        .js_realloc = &js_realloc,
+        .js_malloc_usable_size = &js_malloc_usable_size,
+    };
+
+    pub inline fn init(allocator: ?*const std.mem.Allocator) Runtime {
+        if (allocator) |ptr| {
+            return .{ .ptr = c.JS_NewRuntime2(&malloc_functions, @constCast(ptr)) };
+        } else {
+            return .{ .ptr = c.JS_NewRuntime() };
+        }
     }
 
     pub inline fn deinit(self: Runtime) void {
@@ -708,7 +760,7 @@ pub const Context = packed struct {
         @"async": bool = false,
     };
 
-    pub inline fn eval(self: Context, input: []const u8, filename: []const u8, flags: EvalFlags) error{Exception}!Value {
+    pub inline fn eval(self: Context, input: []const u8, filename: [*:0]const u8, flags: EvalFlags) error{Exception}!Value {
         var c_flags: c_int = 0;
 
         // Set eval type flag
@@ -723,7 +775,7 @@ pub const Context = packed struct {
         if (flags.backtrace_barrier) c_flags |= c.JS_EVAL_FLAG_BACKTRACE_BARRIER;
         if (flags.@"async") c_flags |= c.JS_EVAL_FLAG_ASYNC;
 
-        const result = c.JS_Eval(self.ptr, input.ptr, input.len, filename.ptr, c_flags);
+        const result = c.JS_Eval(self.ptr, input.ptr, input.len, filename, c_flags);
         if (c.JS_IsException(result)) {
             return error.Exception;
         } else {
