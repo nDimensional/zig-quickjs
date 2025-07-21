@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "lib",
+    "strict": true,
+    "target": "es2020",
+    "module": "node16",
+    "moduleResolution": "node16",
+    "lib": ["ESNext.Disposable", "ES2022", "DOM"]
+  }
+}

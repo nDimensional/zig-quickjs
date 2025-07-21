@@ -36,40 +36,40 @@ pub const TypedArrayType = enum(c_int) {
     _,
 };
 
-pub const Runtime = packed struct {
+pub const Runtime = struct {
+    allocator: std.mem.Allocator,
     ptr: ?*c.JSRuntime,
 
-    fn js_calloc(allocator_ptr: ?*anyopaque, count: usize, size: usize) callconv(.c) ?*anyopaque {
-        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+    fn js_calloc(runtime_ptr: ?*anyopaque, count: usize, size: usize) callconv(.c) ?*anyopaque {
+        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
         const len = count * size;
-        const result = allocator.alloc(u8, @sizeOf(usize) + len) catch |err|
+        const result = runtime.allocator.alloc(u8, @sizeOf(usize) + len) catch |err|
             @panic(@errorName(err));
         @memset(result, 0);
         std.mem.writeInt(usize, result[0..@sizeOf(usize)], len, .little);
         return result[@sizeOf(usize)..].ptr;
     }
 
-    fn js_malloc(allocator_ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
-        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
-        const result = allocator.alloc(u8, @sizeOf(usize) + size) catch |err|
+    fn js_malloc(runtime_ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
+        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
+        const result = runtime.allocator.alloc(u8, @sizeOf(usize) + size) catch |err|
             @panic(@errorName(err));
-        @memset(result, 0);
         std.mem.writeInt(usize, result[0..@sizeOf(usize)], size, .little);
         return result[@sizeOf(usize)..].ptr;
     }
 
-    fn js_free(allocator_ptr: ?*anyopaque, ptr: ?*anyopaque) callconv(.c) void {
-        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+    fn js_free(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque) callconv(.c) void {
+        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
         const result: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
         const len = std.mem.readInt(usize, result[0..@sizeOf(usize)], .little);
-        allocator.free(result[0 .. @sizeOf(usize) + len]);
+        runtime.allocator.free(result[0 .. @sizeOf(usize) + len]);
     }
 
-    fn js_realloc(allocator_ptr: ?*anyopaque, ptr: ?*anyopaque, new_len: usize) callconv(.c) ?*anyopaque {
-        const allocator: *const std.mem.Allocator = @alignCast(@ptrCast(allocator_ptr));
+    fn js_realloc(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque, new_len: usize) callconv(.c) ?*anyopaque {
+        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
         const old_ptr: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
         const old_len = std.mem.readInt(usize, old_ptr[0..@sizeOf(usize)], .little);
-        const result = allocator.realloc(old_ptr[0 .. @sizeOf(usize) + old_len], @sizeOf(usize) + new_len) catch |err|
+        const result = runtime.allocator.realloc(old_ptr[0 .. @sizeOf(usize) + old_len], @sizeOf(usize) + new_len) catch |err|
             @panic(@errorName(err));
         std.mem.writeInt(usize, result[0..@sizeOf(usize)], new_len, .little);
         return result[@sizeOf(usize)..].ptr;
@@ -84,79 +84,79 @@ pub const Runtime = packed struct {
         .js_malloc = &js_malloc,
         .js_free = &js_free,
         .js_realloc = &js_realloc,
-        .js_malloc_usable_size = &js_malloc_usable_size,
+        .js_malloc_usable_size = null,
     };
 
-    pub inline fn init(allocator: ?*const std.mem.Allocator) Runtime {
-        if (allocator) |ptr| {
-            return .{ .ptr = c.JS_NewRuntime2(&malloc_functions, @constCast(ptr)) };
-        } else {
-            return .{ .ptr = c.JS_NewRuntime() };
-        }
+    pub fn init(allocator: std.mem.Allocator) !*Runtime {
+        const runtime = try allocator.create(Runtime);
+        runtime.allocator = allocator;
+        runtime.ptr = c.JS_NewRuntime2(&malloc_functions, @constCast(runtime));
+        return runtime;
     }
 
-    pub inline fn deinit(self: Runtime) void {
+    pub fn deinit(self: *const Runtime) void {
         c.JS_FreeRuntime(self.ptr);
+        self.allocator.destroy(self);
     }
 
     /// use 0 to disable memory limit
-    pub inline fn setMemoryLimit(self: Runtime, limit: usize) void {
+    pub inline fn setMemoryLimit(self: *const Runtime, limit: usize) void {
         c.JS_SetMemoryLimit(self.ptr, limit);
     }
 
-    pub inline fn setGCThreshold(self: Runtime, gc_threshold: usize) void {
+    pub inline fn setGCThreshold(self: *const Runtime, gc_threshold: usize) void {
         c.JS_SetGCThreshold(self.ptr, gc_threshold);
     }
 
-    pub inline fn getGCThreshold(self: Runtime) usize {
+    pub inline fn getGCThreshold(self: *const Runtime) usize {
         return c.JS_GetGCThreshold(self.ptr);
     }
 
-    pub inline fn setMaxStackSize(self: Runtime, stack_size: usize) void {
+    pub inline fn setMaxStackSize(self: *const Runtime, stack_size: usize) void {
         c.JS_SetMaxStackSize(self.ptr, stack_size);
     }
 
-    pub inline fn updateStackTop(self: Runtime) void {
+    pub inline fn updateStackTop(self: *const Runtime) void {
         c.JS_UpdateStackTop(self.ptr);
     }
 
-    pub inline fn setRuntimeInfo(self: Runtime, info: []const u8) void {
+    pub inline fn setRuntimeInfo(self: *const Runtime, info: []const u8) void {
         c.JS_SetRuntimeInfo(self.ptr, info.ptr);
     }
 
-    pub inline fn setDumpFlags(self: Runtime, flags: u64) void {
+    pub inline fn setDumpFlags(self: *const Runtime, flags: u64) void {
         c.JS_SetDumpFlags(self.ptr, flags);
     }
 
-    pub inline fn getDumpFlags(self: Runtime) u64 {
+    pub inline fn getDumpFlags(self: *const Runtime) u64 {
         return c.JS_GetDumpFlags(self.ptr);
     }
 
-    pub inline fn setRuntimeOpaque(self: Runtime, ptr: ?*anyopaque) void {
+    pub inline fn setRuntimeOpaque(self: *const Runtime, ptr: ?*anyopaque) void {
         c.JS_SetRuntimeOpaque(self.ptr, ptr);
     }
 
-    pub inline fn getRuntimeOpaque(self: Runtime) ?*anyopaque {
+    pub inline fn getRuntimeOpaque(self: *const Runtime) ?*anyopaque {
         return c.JS_GetRuntimeOpaque(self.ptr);
     }
 
-    pub inline fn runGC(self: Runtime) void {
+    pub inline fn runGC(self: *const Runtime) void {
         c.JS_RunGC(self.ptr);
     }
 
-    pub inline fn isLiveObject(self: Runtime, obj: Value) bool {
+    pub inline fn isLiveObject(self: *const Runtime, obj: Value) bool {
         return c.JS_IsLiveObject(self.ptr, obj);
     }
 
-    pub inline fn markValue(self: Runtime, val: Value, mark_func: c.JS_MarkFunc) void {
+    pub inline fn markValue(self: *const Runtime, val: Value, mark_func: c.JS_MarkFunc) void {
         c.JS_MarkValue(self.ptr, val, mark_func);
     }
 
-    pub inline fn freeValue(self: Runtime, val: Value) void {
+    pub inline fn freeValue(self: *const Runtime, val: Value) void {
         c.JS_FreeValueRT(self.ptr, val);
     }
 
-    pub inline fn dupValue(self: Runtime, val: Value) Value {
+    pub inline fn dupValue(self: *const Runtime, val: Value) Value {
         return c.JS_DupValueRT(self.ptr, val);
     }
 
@@ -189,11 +189,11 @@ pub const Runtime = packed struct {
     // }
 
     // Job queue management
-    pub inline fn isJobPending(self: Runtime) bool {
+    pub inline fn isJobPending(self: *const Runtime) bool {
         return c.JS_IsJobPending(self.ptr);
     }
 
-    pub inline fn executePendingJob(self: Runtime) !?Context {
+    pub inline fn executePendingJob(self: *const Runtime) !?Context {
         var pctx: ?*c.JSContext = null;
         const ret = c.JS_ExecutePendingJob(self.ptr, &pctx);
         if (ret < 0) return error.ExecuteJobFailed;
@@ -231,7 +231,7 @@ pub const Runtime = packed struct {
     };
 
     // Memory management utilities
-    pub inline fn computeMemoryUsage(self: Runtime) MemoryUsage {
+    pub inline fn computeMemoryUsage(self: *const Runtime) MemoryUsage {
         var usage: c.JSMemoryUsage = undefined;
         c.JS_ComputeMemoryUsage(self.ptr, &usage);
         return .{
@@ -264,7 +264,7 @@ pub const Runtime = packed struct {
         };
     }
 
-    pub inline fn dumpMemoryUsage(self: Runtime, usage: *const MemoryUsage, file: std.fs.File) void {
+    pub inline fn dumpMemoryUsage(self: *const Runtime, usage: *const MemoryUsage, file: std.fs.File) void {
         c.JS_DumpMemoryUsage(file.handle, &.{
             .malloc_size = usage.malloc_size,
             .malloc_limit = usage.malloc_limit,
@@ -305,7 +305,7 @@ pub const Runtime = packed struct {
     //     c.JS_SetInterruptHandler(self.ptr, cb, ptr);
     // }
 
-    pub inline fn setCanBlock(self: Runtime, can_block: bool) void {
+    pub inline fn setCanBlock(self: *const Runtime, can_block: bool) void {
         c.JS_SetCanBlock(self.ptr, can_block);
     }
 
@@ -323,31 +323,6 @@ pub const Runtime = packed struct {
     //     c.JS_SetModuleLoaderFunc(self.ptr, module_normalize, module_loader, ptr);
     // }
 
-    // Memory allocation utilities
-    pub inline fn calloc(self: Runtime, count: usize, size: usize) ?*anyopaque {
-        return c.js_calloc_rt(self.ptr, count, size);
-    }
-
-    pub inline fn malloc(self: Runtime, size: usize) ?*anyopaque {
-        return c.js_malloc_rt(self.ptr, size);
-    }
-
-    pub inline fn free(self: Runtime, ptr: ?*anyopaque) void {
-        c.js_free_rt(self.ptr, ptr);
-    }
-
-    pub inline fn realloc(self: Runtime, ptr: ?*anyopaque, size: usize) ?*anyopaque {
-        return c.js_realloc_rt(self.ptr, ptr, size);
-    }
-
-    pub inline fn mallocz(self: Runtime, size: usize) ?*anyopaque {
-        return c.js_mallocz_rt(self.ptr, size);
-    }
-
-    pub inline fn mallocUsableSize(self: Runtime, ptr: ?*const anyopaque) usize {
-        return c.js_malloc_usable_size_rt(self.ptr, ptr);
-    }
-
     // Runtime finalizer
     // pub inline fn addRuntimeFinalizer(self: Runtime, finalizer: c.JSRuntimeFinalizer, arg: ?*anyopaque) !void {
     //     const ret = c.JS_AddRuntimeFinalizer(self.ptr, finalizer, arg);
@@ -358,7 +333,7 @@ pub const Runtime = packed struct {
 pub const Context = packed struct {
     ptr: ?*c.JSContext,
 
-    pub inline fn init(runtime: Runtime) Context {
+    pub inline fn init(runtime: *const Runtime) Context {
         return .{ .ptr = c.JS_NewContext(runtime.ptr) };
     }
 
@@ -366,9 +341,9 @@ pub const Context = packed struct {
         c.JS_FreeContext(self.ptr);
     }
 
-    pub inline fn getRuntime(self: Context) Runtime {
-        return .{ .ptr = c.JS_GetRuntime(self.ptr) };
-    }
+    // pub inline fn getRuntime(self: Context) Runtime {
+    //     return .{ .ptr = c.JS_GetRuntime(self.ptr) };
+    // }
 
     pub inline fn isEqual(self: Context, a: Value, b: Value) bool {
         return c.JS_IsEqual(self.ptr, a, b);
@@ -824,7 +799,7 @@ pub const Context = packed struct {
     pub inline fn getUint8Array(self: Context, obj: Value) ![]u8 {
         var size: usize = undefined;
         const ptr = c.JS_GetUint8Array(self.ptr, &size, obj);
-        if (ptr == null) return error.NotUint8Array;
+        if (ptr == null) return error.TypeError;
         return ptr[0..size];
     }
 
@@ -836,11 +811,11 @@ pub const Context = packed struct {
         return c.JS_NewUint8ArrayCopy(self.ptr, buf.ptr, buf.len);
     }
 
-    pub inline fn getTypedArrayType(self: Context, obj: Value) ?TypedArrayType {
+    pub inline fn getTypedArrayType(self: Context, obj: Value) !TypedArrayType {
         _ = self;
         const type_int = c.JS_GetTypedArrayType(obj);
-        if (type_int < 0) return null;
-        return @as(PromiseState, @enumFromInt(type_int));
+        if (type_int < 0) return error.TypeError;
+        return @enumFromInt(type_int);
     }
 
     pub inline fn getTypedArrayBuffer(self: Context, obj: Value) !ArrayBuffer {
