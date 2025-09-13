@@ -1,1 +1,1 @@
-pub usingnamespace @cImport(@cInclude("quickjs.h"));
+pub const c = @cImport(@cInclude("quickjs.h"));

@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
-    // const target = b.standardTargetOptions(.{});
+    const target = b.standardTargetOptions(.{});
 
     const quickjs_dep = b.dependency("quickjs", .{});
     const quickjs = b.addModule("quickjs", .{ .root_source_file = b.path("src/lib.zig") });
@@ -19,8 +19,16 @@ pub fn build(b: *std.Build) void {
     });
 
     // Tests
-    const tests = b.addTest(.{ .root_source_file = b.path("src/test.zig") });
-    tests.root_module.addImport("quickjs", quickjs);
+
+    const tests = b.addTest(.{ .root_module = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("src/test.zig"),
+        .imports = &.{
+            .{ .name = "quickjs", .module = quickjs },
+        },
+    }) });
+
     const test_runner = b.addRunArtifact(tests);
 
     b.step("test", "Run QuickJS tests").dependOn(&test_runner.step);
@@ -28,11 +36,13 @@ pub fn build(b: *std.Build) void {
     // WASM
     const wasm = b.addExecutable(.{
         .name = "quickjs",
-        .root_source_file = b.path("./wasm/lib.zig"),
-        .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .wasi }),
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .wasi }),
+            .optimize = optimize,
+            .root_source_file = b.path("./wasm/lib.zig"),
+            // .link_libc = true,
+        }),
         .version = .{ .major = 0, .minor = 0, .patch = 1 },
-        .link_libc = true,
     });
 
     wasm.linkLibC();

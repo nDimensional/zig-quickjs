@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("c.zig");
+const c = @import("c.zig").c;
 
 // pub const ClassID = u32;
 
@@ -41,7 +41,7 @@ pub const Runtime = struct {
     ptr: ?*c.JSRuntime,
 
     fn js_calloc(runtime_ptr: ?*anyopaque, count: usize, size: usize) callconv(.c) ?*anyopaque {
-        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
+        const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
         const len = count * size;
         const result = runtime.allocator.alloc(u8, @sizeOf(usize) + len) catch |err|
             @panic(@errorName(err));
@@ -51,7 +51,7 @@ pub const Runtime = struct {
     }
 
     fn js_malloc(runtime_ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
-        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
+        const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
         const result = runtime.allocator.alloc(u8, @sizeOf(usize) + size) catch |err|
             @panic(@errorName(err));
         std.mem.writeInt(usize, result[0..@sizeOf(usize)], size, .little);
@@ -59,14 +59,14 @@ pub const Runtime = struct {
     }
 
     fn js_free(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque) callconv(.c) void {
-        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
+        const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
         const result: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
         const len = std.mem.readInt(usize, result[0..@sizeOf(usize)], .little);
         runtime.allocator.free(result[0 .. @sizeOf(usize) + len]);
     }
 
     fn js_realloc(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque, new_len: usize) callconv(.c) ?*anyopaque {
-        const runtime: *const Runtime = @alignCast(@ptrCast(runtime_ptr));
+        const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
         const old_ptr: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
         const old_len = std.mem.readInt(usize, old_ptr[0..@sizeOf(usize)], .little);
         const result = runtime.allocator.realloc(old_ptr[0 .. @sizeOf(usize) + old_len], @sizeOf(usize) + new_len) catch |err|
@@ -732,7 +732,7 @@ pub const Context = packed struct {
         strict: bool = false,
         compile_only: bool = false,
         backtrace_barrier: bool = false,
-        @"async": bool = false,
+        async: bool = false,
     };
 
     pub inline fn eval(self: Context, input: []const u8, filename: [*:0]const u8, flags: EvalFlags) error{Exception}!Value {
@@ -748,7 +748,7 @@ pub const Context = packed struct {
         if (flags.strict) c_flags |= c.JS_EVAL_FLAG_STRICT;
         if (flags.compile_only) c_flags |= c.JS_EVAL_FLAG_COMPILE_ONLY;
         if (flags.backtrace_barrier) c_flags |= c.JS_EVAL_FLAG_BACKTRACE_BARRIER;
-        if (flags.@"async") c_flags |= c.JS_EVAL_FLAG_ASYNC;
+        if (flags.async) c_flags |= c.JS_EVAL_FLAG_ASYNC;
 
         const result = c.JS_Eval(self.ptr, input.ptr, input.len, filename, c_flags);
         if (c.JS_IsException(result)) {

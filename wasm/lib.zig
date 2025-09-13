@@ -2,7 +2,7 @@ const std = @import("std");
 
 // const quickjs = @import("quickjs");
 
-const c = @import("c.zig");
+const c = @import("c.zig").c;
 
 extern fn print(ptr: [*]const u8, len: usize) void;
 
