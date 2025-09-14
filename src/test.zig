@@ -57,7 +57,7 @@ test "Create objects and manipulate properties" {
     }
 
     { // Set and get a boolean property
-        const value = c.newBool(true);
+        const value = quickjs.TRUE;
         try c.setPropertyStr(obj, "boolProp", value);
 
         const retrieved_value = c.getPropertyStr(obj, "boolProp");

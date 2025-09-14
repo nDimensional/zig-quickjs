@@ -13,12 +13,13 @@ pub const ArrayBuffer = struct {
 pub const Atom = c.JSAtom;
 pub const Value = c.JSValue;
 
-pub const NULL = Value{ .u = .{ .int32 = 0 }, .tag = c.JS_TAG_NULL };
-pub const UNDEFINED = Value{ .u = .{ .int32 = 0 }, .tag = c.JS_TAG_UNDEFINED };
-pub const FALSE = c.JS_FALSE;
-pub const TRUE = c.JS_TRUE;
-pub const EXCEPTION = c.JS_EXCEPTION;
-pub const UNINITIALIZED = c.JS_UNINITIALIZED;
+pub const NULL = Value{ .tag = c.JS_TAG_NULL, .u = .{ .int32 = 0 } };
+pub const UNDEFINED = Value{ .tag = c.JS_TAG_UNDEFINED, .u = .{ .int32 = 0 } };
+pub const FALSE = Value{ .tag = c.JS_TAG_BOOL, .u = .{ .int32 = 0 } };
+pub const TRUE = Value{ .tag = c.JS_TAG_BOOL, .u = .{ .int32 = 1 } };
+pub const UNINITIALIZED = Value{ .tag = c.JS_TAG_UNINITIALIZED, .u = .{ .int32 = 0 } };
+
+// pub const EXCEPTION = c.JS_EXCEPTION;
 
 pub const TypedArrayType = enum(c_int) {
     Uint8ClampedArray = c.JS_TYPED_ARRAY_UINT8C,
@@ -369,10 +370,10 @@ pub const Context = packed struct {
 
     pub inline fn newBool(_: Context, val: bool) Value {
         return c.JSValue{
+            .tag = @as(i64, @bitCast(@as(c_longlong, c.JS_TAG_BOOL))),
             .u = c.JSValueUnion{
                 .int32 = @as(c_int, @intFromBool(val)),
             },
-            .tag = @as(i64, @bitCast(@as(c_longlong, c.JS_TAG_BOOL))),
         };
     }
 
