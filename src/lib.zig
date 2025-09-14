@@ -493,25 +493,25 @@ pub const Context = packed struct {
         return c.JS_ToString(self.ptr, val);
     }
 
-    pub inline fn toCString(self: Context, val: Value) ?[*:0]const u8 {
-        return c.JS_ToCString(self.ptr, val);
+    pub inline fn toCString(self: Context, val: Value) ![*:0]const u8 {
+        return c.JS_ToCString(self.ptr, val) orelse error.Exception;
     }
 
-    pub inline fn toCStringLen(self: Context, val: Value) ?[:0]const u8 {
+    pub inline fn toCStringLen(self: Context, val: Value) ![:0]const u8 {
         var len: usize = undefined;
-        const str = c.JS_ToCStringLen(self.ptr, &len, val);
-        if (str == null) return null;
-        return .{ .str = str, .len = len };
+        const ptr = c.JS_ToCStringLen(self.ptr, &len, val) orelse
+            return error.Exception;
+        return ptr[0..len :0];
     }
 
-    pub inline fn toCStringOwned(self: Context, val: Value) ?[:0]const u8 {
-        var len: usize = undefined;
-        const str = c.JS_ToCStringLen(self.ptr, &len, val);
-        if (str == null) return null;
-        return str[0..len :0];
-    }
+    // pub inline fn toCStringOwned(self: Context, val: Value) ?[:0]const u8 {
+    //     var len: usize = undefined;
+    //     const str = c.JS_ToCStringLen(self.ptr, &len, val);
+    //     if (str == null) return null;
+    //     return str[0..len :0];
+    // }
 
-    pub inline fn freeCString(self: Context, ptr: ?[*:0]const u8) void {
+    pub inline fn freeCString(self: Context, ptr: [*:0]const u8) void {
         c.JS_FreeCString(self.ptr, ptr);
     }
 
@@ -693,8 +693,8 @@ pub const Context = packed struct {
         if (ret < 0) return error.Exception;
     }
 
-    pub inline fn setPropertyStr(self: Context, obj: Value, prop: []const u8, val: Value) !void {
-        const ret = c.JS_SetPropertyStr(self.ptr, obj, prop.ptr, val);
+    pub inline fn setPropertyStr(self: Context, obj: Value, prop: [*:0]const u8, val: Value) !void {
+        const ret = c.JS_SetPropertyStr(self.ptr, obj, prop, val);
         if (ret < 0) return error.Exception;
     }
 
@@ -883,8 +883,8 @@ pub const Context = packed struct {
         return c.JS_AtomToString(self.ptr, atom);
     }
 
-    pub inline fn atomToCString(self: Context, atom: Atom) ?[*:0]const u8 {
-        return c.JS_AtomToCString(self.ptr, atom);
+    pub inline fn atomToCString(self: Context, atom: Atom) ![*:0]const u8 {
+        return c.JS_AtomToCString(self.ptr, atom) orelse return error.Exception;
     }
 
     pub inline fn valueToAtom(self: Context, val: Value) Atom {

@@ -31,24 +31,42 @@ test "Create objects and manipulate properties" {
     const obj = c.newObject();
     defer c.freeValue(obj);
 
-    // Set and get a string property
-    const strValue = c.newString("test value");
-    defer c.freeValue(strValue);
-    try c.setPropertyStr(obj, "stringProp", strValue);
+    { // Set and get a string property
+        const value = c.newString("test value");
+        try c.setPropertyStr(obj, "stringProp", value);
 
-    const retrievedStr = c.getPropertyStr(obj, "stringProp");
-    try std.testing.expect(c.isSameValue(strValue, retrievedStr));
+        const retrieved_value = c.getPropertyStr(obj, "stringProp");
+        defer c.freeValue(retrieved_value);
+        try std.testing.expect(c.isSameValue(value, retrieved_value));
 
-    // Set and get a number property
-    const numValue = c.newInt32(42);
-    try c.setPropertyStr(obj, "numProp", numValue);
+        const value_as_str = try c.toCStringLen(retrieved_value);
+        defer c.freeCString(value_as_str);
+        try std.testing.expectEqualSentinel(u8, 0, "test value", value_as_str);
+    }
 
-    const retrievedNum = c.getPropertyStr(obj, "numProp");
-    defer c.freeValue(retrievedNum);
+    { // Set and get a number property
+        const value = c.newInt32(42);
+        try c.setPropertyStr(obj, "numProp", value);
 
-    try std.testing.expect(c.isNumber(retrievedNum));
-    const numAsInt = try c.toInt32(retrievedNum);
-    try std.testing.expectEqual(@as(i32, 42), numAsInt);
+        const retrieved_value = c.getPropertyStr(obj, "numProp");
+        defer c.freeValue(retrieved_value);
+        try std.testing.expect(c.isNumber(retrieved_value));
+
+        const value_as_int = try c.toInt32(retrieved_value);
+        try std.testing.expectEqual(@as(i32, 42), value_as_int);
+    }
+
+    { // Set and get a boolean property
+        const value = c.newBool(true);
+        try c.setPropertyStr(obj, "boolProp", value);
+
+        const retrieved_value = c.getPropertyStr(obj, "boolProp");
+        defer c.freeValue(retrieved_value);
+        try std.testing.expect(c.isBool(retrieved_value));
+
+        const value_as_bool = try c.toBool(retrieved_value);
+        try std.testing.expectEqual(@as(bool, true), value_as_bool);
+    }
 }
 
 test "Array creation and manipulation" {
@@ -284,7 +302,7 @@ test "Value conversion roundtrip tests" {
     const str_val = c.newString(test_str);
     defer c.freeValue(str_val);
 
-    const c_str = c.toCString(str_val) orelse return error.InvalidString;
+    const c_str = try c.toCString(str_val);
     defer c.freeCString(c_str);
 
     const slice = std.mem.span(c_str);
@@ -323,7 +341,7 @@ test "Atom API" {
     try std.testing.expect(c.isString(atom_string));
 
     // Test atom C string conversion
-    const atom_cstr = c.atomToCString(atom) orelse return error.InvalidString;
+    const atom_cstr = try c.atomToCString(atom);
     defer c.freeCString(atom_cstr);
     const atom_slice = std.mem.span(atom_cstr);
     try std.testing.expectEqualStrings("testProperty", atom_slice);
@@ -386,7 +404,7 @@ test "Error handling" {
     defer c.freeValue(try_catch_result);
 
     try std.testing.expect(c.isString(try_catch_result));
-    const c_str = c.toCString(try_catch_result) orelse return error.InvalidString;
+    const c_str = try c.toCString(try_catch_result);
     defer c.freeCString(c_str);
     const str_slice = std.mem.span(c_str);
     try std.testing.expectEqualStrings("Test error", str_slice);
@@ -472,7 +490,7 @@ test "JSON functions" {
 
     try std.testing.expect(c.isString(stringified));
 
-    const c_str = c.toCString(stringified) orelse return error.InvalidString;
+    const c_str = try c.toCString(stringified);
     defer c.freeCString(c_str);
 
     const str_slice = std.mem.span(c_str);
