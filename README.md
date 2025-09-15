@@ -2,6 +2,15 @@
 
 Status: WIP. The majority of the Runtime, Context, and Value methods are exposed. Methods relating to custom classes, callbacks, and system integration are mostly missing.
 
+## Installation
+
+Requires Zig `0.15.1`.
+
+```
+zig fetch --save=quickjs \
+  https://github.com/nDimensional/zig-quickjs/archive/{COMMIT}.tar.gz
+```
+
 ## API
 
 ### Primitives
