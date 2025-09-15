@@ -1,5 +1,7 @@
 # zig-quickjs
 
+Status: WIP. The majority of the Runtime, Context, and Value methods are exposed. Methods relating to custom classes, callbacks, and system integration are mostly missing.
+
 ## API
 
 ### Primitives
