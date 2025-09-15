@@ -32,42 +32,4 @@ pub fn build(b: *std.Build) void {
     const test_runner = b.addRunArtifact(tests);
 
     b.step("test", "Run QuickJS tests").dependOn(&test_runner.step);
-
-    // WASM
-    const wasm = b.addExecutable(.{
-        .name = "quickjs",
-        .root_module = b.createModule(.{
-            .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .wasi }),
-            .optimize = optimize,
-            .root_source_file = b.path("./wasm/lib.zig"),
-            // .link_libc = true,
-        }),
-        .version = .{ .major = 0, .minor = 0, .patch = 1 },
-    });
-
-    wasm.linkLibC();
-    wasm.addIncludePath(quickjs_dep.path("."));
-    wasm.addCSourceFiles(.{
-        .root = quickjs_dep.path("."),
-        // .flags = &.{"-DENABLE_DUMPS"},
-        .files = &.{
-            "quickjs.c",
-            "libregexp.c",
-            "cutils.c",
-            "libunicode.c",
-            "xsum.c",
-        },
-    });
-
-    wasm.addIncludePath(b.path("wasm"));
-    wasm.addCSourceFile(.{
-        .file = b.path("wasm/foo.c"),
-        // .flags = &.{"-DNDEBUG"},
-    });
-
-    // wasm.root_module.addImport("quickjs", quickjs);
-
-    wasm.entry = .disabled;
-    wasm.rdynamic = true;
-    b.installArtifact(wasm);
 }

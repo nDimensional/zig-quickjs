@@ -37,6 +37,9 @@ pub const TypedArrayType = enum(c_int) {
     _,
 };
 
+const S = @sizeOf(usize);
+const H = @max(8, S);
+
 pub const Runtime = struct {
     allocator: std.mem.Allocator,
     ptr: ?*c.JSRuntime,
@@ -44,36 +47,36 @@ pub const Runtime = struct {
     fn js_calloc(runtime_ptr: ?*anyopaque, count: usize, size: usize) callconv(.c) ?*anyopaque {
         const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
         const len = count * size;
-        const result = runtime.allocator.alloc(u8, @sizeOf(usize) + len) catch |err|
+        const result = runtime.allocator.alloc(u8, H + len) catch |err|
             @panic(@errorName(err));
         @memset(result, 0);
-        std.mem.writeInt(usize, result[0..@sizeOf(usize)], len, .little);
-        return result[@sizeOf(usize)..].ptr;
+        std.mem.writeInt(usize, result[0..S], len, .little);
+        return result[H..].ptr;
     }
 
     fn js_malloc(runtime_ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
         const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
-        const result = runtime.allocator.alloc(u8, @sizeOf(usize) + size) catch |err|
+        const result = runtime.allocator.alloc(u8, H + size) catch |err|
             @panic(@errorName(err));
-        std.mem.writeInt(usize, result[0..@sizeOf(usize)], size, .little);
-        return result[@sizeOf(usize)..].ptr;
+        std.mem.writeInt(usize, result[0..S], size, .little);
+        return result[H..].ptr;
     }
 
     fn js_free(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque) callconv(.c) void {
         const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
-        const result: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
-        const len = std.mem.readInt(usize, result[0..@sizeOf(usize)], .little);
-        runtime.allocator.free(result[0 .. @sizeOf(usize) + len]);
+        const result: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - H);
+        const len = std.mem.readInt(usize, result[0..S], .little);
+        runtime.allocator.free(result[0 .. H + len]);
     }
 
     fn js_realloc(runtime_ptr: ?*anyopaque, ptr: ?*anyopaque, new_len: usize) callconv(.c) ?*anyopaque {
         const runtime: *const Runtime = @ptrCast(@alignCast(runtime_ptr));
-        const old_ptr: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
-        const old_len = std.mem.readInt(usize, old_ptr[0..@sizeOf(usize)], .little);
-        const result = runtime.allocator.realloc(old_ptr[0 .. @sizeOf(usize) + old_len], @sizeOf(usize) + new_len) catch |err|
+        const old_ptr: [*]u8 = @ptrFromInt(@intFromPtr(ptr) - H);
+        const old_len = std.mem.readInt(usize, old_ptr[0..S], .little);
+        const result = runtime.allocator.realloc(old_ptr[0 .. H + old_len], H + new_len) catch |err|
             @panic(@errorName(err));
-        std.mem.writeInt(usize, result[0..@sizeOf(usize)], new_len, .little);
-        return result[@sizeOf(usize)..].ptr;
+        std.mem.writeInt(usize, result[0..S], new_len, .little);
+        return result[H..].ptr;
     }
 
     fn js_malloc_usable_size(_: ?*const anyopaque) callconv(.c) usize {
