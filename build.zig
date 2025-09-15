@@ -20,14 +20,16 @@ pub fn build(b: *std.Build) void {
 
     // Tests
 
-    const tests = b.addTest(.{ .root_module = b.createModule(.{
-        .target = target,
-        .optimize = optimize,
-        .root_source_file = b.path("src/test.zig"),
-        .imports = &.{
-            .{ .name = "quickjs", .module = quickjs },
-        },
-    }) });
+    const tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .root_source_file = b.path("src/test.zig"),
+        }),
+    });
+
+    tests.root_module.addImport("quickjs", quickjs);
+    tests.linkLibC();
 
     const test_runner = b.addRunArtifact(tests);
 
