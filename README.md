@@ -12,22 +12,22 @@ pub const NULL: Value;
 pub const UNDEFINED: Value;
 pub const FALSE: Value;
 pub const TRUE: Value;
-pub const EXCEPTION: Value;
 pub const UNINITIALIZED: Value;
+// pub const EXCEPTION: Value;
 
 pub const TypedArrayType = enum(c_int) {
-    Uint8ClampedArray = c.JS_TYPED_ARRAY_UINT8C,
-    Int8Array = c.JS_TYPED_ARRAY_INT8,
-    Uint8Array = c.JS_TYPED_ARRAY_UINT8,
-    Int16Array = c.JS_TYPED_ARRAY_INT16,
-    Uint16Array = c.JS_TYPED_ARRAY_UINT16,
-    Int32Array = c.JS_TYPED_ARRAY_INT32,
-    Uint32Array = c.JS_TYPED_ARRAY_UINT32,
-    BigInt64Array = c.JS_TYPED_ARRAY_BIG_INT64,
-    BigUint64Array = c.JS_TYPED_ARRAY_BIG_UINT64,
-    Float16Array = c.JS_TYPED_ARRAY_FLOAT16,
-    Float32Array = c.JS_TYPED_ARRAY_FLOAT32,
-    Float64Array = c.JS_TYPED_ARRAY_FLOAT64,
+    Uint8ClampedArray,
+    Int8Array,
+    Uint8Array,
+    Int16Array,
+    Uint16Array,
+    Int32Array,
+    Uint32Array,
+    BigInt64Array,
+    BigUint64Array,
+    Float16Array,
+    Float32Array,
+    Float64Array,
     _,
 };
 ```
@@ -146,7 +146,7 @@ pub const Context = struct {
     pub inline fn toString(self: Context, val: Value) Value
     pub inline fn toCString(self: Context, val: Value) ?[*:0]const u8
     pub inline fn toCStringLen(self: Context, val: Value) ?struct { str: [*:0]const u8, len: usize }
-    pub inline fn toCStringOwned(self: Context, val: Value) ?[:0]const u8
+    // pub inline fn toCStringOwned(self: Context, val: Value) ?[:0]const u8
     pub inline fn freeCString(self: Context, ptr: [*:0]const u8) void
     pub inline fn toPropertyKey(self: Context, val: Value) Value
     pub inline fn toObject(self: Context, val: Value) Value
